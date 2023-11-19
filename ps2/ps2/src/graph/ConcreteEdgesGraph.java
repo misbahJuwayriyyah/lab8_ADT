@@ -65,18 +65,25 @@ public class ConcreteEdgesGraph implements Graph<String> {
     }
     
     @Override
-    public boolean remove(String vertex) {
-        checkRep();
-        if (!vertices.contains(vertex)) {
-            return false; // Vertex does not exist
-        }
-        
-        vertices.remove(vertex);
-        edges.removeIf(edge -> edge.getSource().equals(vertex) || edge.getTarget().equals(vertex));
-        
-        checkRep();
-        return true;
+public boolean remove(String vertex) {
+    checkRep();
+    if (!vertices.contains(vertex)) {
+        return false; // Vertex does not exist
     }
+
+    // Remove the vertex from the set of vertices
+    vertices.remove(vertex);
+
+    // Remove edges going out from the vertex
+    edges.removeIf(edge -> edge.getSource().equals(vertex) || edge.getTarget().equals(vertex));
+
+    // Remove edges coming into the vertex
+    edges.removeIf(edge -> edge.getSource().equals(vertex) || edge.getTarget().equals(vertex));
+
+    checkRep();
+    return true;
+}
+
     
     @Override
     public Set<String> vertices() {
