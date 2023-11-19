@@ -37,93 +37,161 @@ public class ConcreteEdgesGraph implements Graph<String> {
     
     @Override
     public boolean add(String vertex) {
-        // TODO
-        throw new RuntimeException("not implemented");
+        checkRep();
+        return vertices.add(vertex);
     }
     
     @Override
     public int set(String source, String target, int weight) {
-        // TODO
-        throw new RuntimeException("not implemented");
+        checkRep();
+        if (!vertices.contains(source) || !vertices.contains(target)) {
+            throw new IllegalArgumentException("Source or target vertex does not exist.");
+        }
+        
+        Edge newEdge = new Edge(source, target, weight);
+        int index = edges.indexOf(newEdge);
+        
+        if (index == -1) {
+            edges.add(newEdge);
+            checkRep();
+            return 0; // Edge was added
+        } else {
+            Edge existingEdge = edges.get(index);
+            int oldWeight = existingEdge.getWeight();
+            existingEdge.setWeight(weight);
+            checkRep();
+            return oldWeight; // Edge already existed, return old weight
+        }
     }
     
     @Override
     public boolean remove(String vertex) {
-        // TODO
-        throw new RuntimeException("not implemented");
+        checkRep();
+        if (!vertices.contains(vertex)) {
+            return false; // Vertex does not exist
+        }
+        
+        vertices.remove(vertex);
+        edges.removeIf(edge -> edge.getSource().equals(vertex) || edge.getTarget().equals(vertex));
+        
+        checkRep();
+        return true;
     }
     
     @Override
     public Set<String> vertices() {
-        // TODO
-        throw new RuntimeException("not implemented");
+        checkRep();
+        return new HashSet<>(vertices);
     }
     
     @Override
     public Map<String, Integer> sources(String target) {
-        // TODO
-        throw new RuntimeException("not implemented");
+        checkRep();
+        if (!vertices.contains(target)) {
+            throw new IllegalArgumentException("Target vertex does not exist.");
+        }
+        
+        Map<String, Integer> sourceMap = new HashMap<>();
+        for (Edge edge : edges) {
+            if (edge.getTarget().equals(target)) {
+                sourceMap.put(edge.getSource(), edge.getWeight());
+            }
+        }
+        
+        return sourceMap;
     }
     
     @Override
     public Map<String, Integer> targets(String source) {
-        // TODO
-        throw new RuntimeException("not implemented");
+        checkRep();
+        if (!vertices.contains(source)) {
+            throw new IllegalArgumentException("Source vertex does not exist.");
+        }
+        
+        Map<String, Integer> targetMap = new HashMap<>();
+        for (Edge edge : edges) {
+            if (edge.getSource().equals(source)) {
+                targetMap.put(edge.getTarget(), edge.getWeight());
+            }
+        }
+        
+        return targetMap;
     }
     
     // TODO toString()
-}
-
-/**
- * Immutable.
- * This class is internal to the rep of ConcreteEdgesGraph.
- * 
- * <p>PS2 instructions: the specification and implementation of this class are
- * up to you.
- */
-class Edge {
     
-    // TODO fields
-    private final String source;
-    private final String target;
-    private final int weight;
-    
-    // Abstraction function:
-    //   Represents a directed edge in the graph with a source vertex, a target vertex, and a weight.
-    
-    // Representation invariant:
-    //   source and target are not null.
-    //   weight is non-negative.
-    
-    // Safety from rep exposure:
-    //   Fields are private and final.
-    
-    // TODO constructor
-    public Edge(String source, String target, int weight) {
-        this.source = source;
-        this.target = target;
-        this.weight = weight;
+    /**
+     * Immutable.
+     * This class is internal to the rep of ConcreteEdgesGraph.
+     * 
+     * <p>PS2 instructions: the specification and implementation of this class are
+     * up to you.
+     */
+    private static class Edge {
+        
+        // TODO fields
+        private final String source;
+        private final String target;
+        private int weight;
+        
+        // Abstraction function:
+        //   Represents a directed edge in the graph with a source vertex, a target vertex, and a weight.
+        
+        // Representation invariant:
+        //   source and target are not null.
+        //   weight is non-negative.
+        
+        // Safety from rep exposure:
+        //   Fields are private and final.
+        
+        // TODO constructor
+        public Edge(String source, String target, int weight) {
+            this.source = source;
+            this.target = target;
+            this.weight = weight;
+        }
+        
+        // TODO checkRep
+        private void checkRep() {
+            assert source != null : "Source vertex cannot be null.";
+            assert target != null : "Target vertex cannot be null.";
+            assert weight >= 0 : "Weight of the edge cannot be negative.";
+        }
+        
+        // TODO methods
+        public String getSource() {
+            return source;
+        }
+        
+        public String getTarget() {
+            return target;
+        }
+        
+        public int getWeight() {
+            return weight;
+        }
+        
+        public void setWeight(int weight) {
+            this.weight = weight;
+        }
+        
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (obj == null || getClass() != obj.getClass()) {
+                return false;
+            }
+            Edge edge = (Edge) obj;
+            return source.equals(edge.source) && target.equals(edge.target);
+        }
+        
+        @Override
+        public int hashCode() {
+            return Objects.hash(source, target);
+        }
+        
+        // TODO toString()
     }
-    
-    // TODO checkRep
-    private void checkRep() {
-        assert source != null : "Source vertex cannot be null.";
-        assert target != null : "Target vertex cannot be null.";
-        assert weight >= 0 : "Weight of the edge cannot be negative.";
-    }
-    
-    // TODO methods
-    public String getSource() {
-        return source;
-    }
-    
-    public String getTarget() {
-        return target;
-    }
-    
-    public int getWeight() {
-        return weight;
-    }
-    
-    // TODO toString()
 }
