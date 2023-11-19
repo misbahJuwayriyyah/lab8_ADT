@@ -34,38 +34,85 @@ public class ConcreteVerticesGraph implements Graph<String> {
     
     @Override
     public boolean add(String vertex) {
-        // TODO
-        throw new RuntimeException("not implemented");
+        checkRep();
+        if (containsVertex(vertex)) {
+            return false; // Vertex already exists
+        }
+        
+        vertices.add(new Vertex(vertex));
+        checkRep();
+        return true;
     }
     
     @Override
     public int set(String source, String target, int weight) {
-        // TODO
-        throw new RuntimeException("not implemented");
+        checkRep();
+        Vertex sourceVertex = getVertex(source);
+        Vertex targetVertex = getVertex(target);
+
+        if (sourceVertex == null || targetVertex == null) {
+            throw new IllegalArgumentException("Source or target vertex does not exist.");
+        }
+
+        int oldWeight = sourceVertex.getOutgoingEdges().getOrDefault(target, 0);
+        sourceVertex.addOutgoingEdge(target, weight);
+        targetVertex.addIncomingEdge(source, weight);
+
+        checkRep();
+        return oldWeight;
     }
     
     @Override
     public boolean remove(String vertex) {
-        // TODO
-        throw new RuntimeException("not implemented");
+        checkRep();
+        Vertex vertexToRemove = getVertex(vertex);
+
+        if (vertexToRemove == null) {
+            return false; // Vertex does not exist
+        }
+
+        vertices.remove(vertexToRemove);
+
+        // Remove incoming and outgoing edges
+        for (Vertex v : vertices) {
+            v.removeOutgoingEdge(vertex);
+            v.removeIncomingEdge(vertex);
+        }
+
+        checkRep();
+        return true;
     }
     
     @Override
     public Set<String> vertices() {
-        // TODO
-        throw new RuntimeException("not implemented");
+        checkRep();
+        Set<String> vertexSet = new HashSet<>();
+        for (Vertex vertex : vertices) {
+            vertexSet.add(vertex.getLabel());
+        }
+        return Collections.unmodifiableSet(vertexSet);
     }
     
     @Override
     public Map<String, Integer> sources(String target) {
-        // TODO
-        throw new RuntimeException("not implemented");
+        checkRep();
+        Vertex targetVertex = getVertex(target);
+        if (targetVertex == null) {
+            throw new IllegalArgumentException("Target vertex does not exist.");
+        }
+
+        return Collections.unmodifiableMap(targetVertex.getIncomingEdges());
     }
     
     @Override
     public Map<String, Integer> targets(String source) {
-        // TODO
-        throw new RuntimeException("not implemented");
+        checkRep();
+        Vertex sourceVertex = getVertex(source);
+        if (sourceVertex == null) {
+            throw new IllegalArgumentException("Source vertex does not exist.");
+        }
+
+        return Collections.unmodifiableMap(sourceVertex.getOutgoingEdges());
     }
     
     // TODO toString()
@@ -127,19 +174,27 @@ class Vertex {
     }
     
     public void addOutgoingEdge(String target, int weight) {
+        checkRep();
         outgoingEdges.put(target, weight);
+        checkRep();
     }
     
     public void addIncomingEdge(String source, int weight) {
+        checkRep();
         incomingEdges.put(source, weight);
+        checkRep();
     }
     
     public void removeOutgoingEdge(String target) {
+        checkRep();
         outgoingEdges.remove(target);
+        checkRep();
     }
     
     public void removeIncomingEdge(String source) {
+        checkRep();
         incomingEdges.remove(source);
+        checkRep();
     }
     
     // TODO toString()
