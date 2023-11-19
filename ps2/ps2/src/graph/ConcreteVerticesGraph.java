@@ -31,13 +31,20 @@ public class ConcreteVerticesGraph implements Graph<String> {
         }
         assert vertices.size() == uniqueVertices.size() : "Duplicate vertices found.";
     }
+
+    // Helper method to get a vertex by label
+    private Vertex getVertex(String label) {
+        for (Vertex vertex : vertices) {
+            if (vertex.getLabel().equals(label)) {
+                return vertex;
+            }
+        }
+        return null;
+    }
     
     @Override
     public boolean add(String vertex) {
         checkRep();
-        if (containsVertex(vertex)) {
-            return false; // Vertex already exists
-        }
         
         vertices.add(new Vertex(vertex));
         checkRep();
