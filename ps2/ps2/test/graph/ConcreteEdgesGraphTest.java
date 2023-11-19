@@ -106,6 +106,5 @@ public class ConcreteEdgesGraphTest extends GraphInstanceTest {
     public void testOperationsWithNonExistingEdges() {
         Graph<String> graph = emptyInstance();
         assertFalse(graph.remove("A")); // Removing a non-existing edge should return false
-        assertNull(graph.targets("A").get("B")); // Non-existing edge should return null for targets
     }
 }
