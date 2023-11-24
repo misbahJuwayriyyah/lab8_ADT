@@ -1,209 +1,277 @@
+/* Copyright (c) 2015-2016 MIT 6.005 course staff, all rights reserved.
+ * Redistribution of original or derived work requires permission of course staff.
+ */
 package graph;
 
-import java.util.*;
-
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 /**
  * An implementation of Graph.
  * 
  * <p>PS2 instructions: you MUST use the provided rep.
  */
-public class ConcreteEdgesGraph implements Graph<String> {
+public class ConcreteEdgesGraph<L> implements Graph<L> {
     
-    private final Set<String> vertices = new HashSet<>();
-    private final List<Edge> edges = new ArrayList<>();
+    private final Set<L> vertices = new HashSet<>();
+    private final List<Edge<L>> edges = new ArrayList<>();
     
     // Abstraction function:
-    //   Represents a directed graph where each vertex is a string, and edges have weights.
+    //   represents all edges in a graph as a pair of connected vertices
+    //   with a source to target direction that carries weight 
     // Representation invariant:
-    //   Vertices in the graph are unique.
-    //   Edges in the graph are unique based on source and target vertices.
+    //   vertices is a set of objects of type L
+    //   edges is a list of distinct weighted Edges made by 
+    //      distinct pairs of vertices(no pair of vertices exists more than once).   
+    //   An edge must be connected to at least v number of vertices, for example,
+    //     2 edges require at least 3 vertices, 5 edges require at least 4 vertices
+    //     vertices.size() >= Math.ceil(Math.sqrt(2*edges.size) + 0.5)
+    //     (source) https://math.stackexchange.com/a/1954272
+    //
     // Safety from rep exposure:
-    //   The set of vertices and the list of edges are private, and defensive copying is used when needed.
+    //   All fields are private and final
+    //   vertices and edges are mutable types, so operations use defensive copies and
+    //   immutable wrappers to avoid sharing the rep's objects to clients
     
-    // TODO constructor
-    public ConcreteEdgesGraph() {
-        // Constructor can be empty if no additional setup is needed.
+    public ConcreteEdgesGraph(){
     }
-    
-    // TODO checkRep
-    private void checkRep() {
-        Set<String> uniqueVertices = new HashSet<>();
-        for (Edge edge : edges) {
-            uniqueVertices.add(edge.getSource());
-            uniqueVertices.add(edge.getTarget());
-        }
-        assert vertices.equals(uniqueVertices) : "Vertices and edges are not consistent.";
+    private void checkRep(){
+        final int sizeOfEdges = edges.size();
+        final int sizeOfVertices = vertices.size();
+        int minNumberOfVertices = 
+                sizeOfEdges == 0 ? 0 : (int)Math.ceil(Math.sqrt(2 * sizeOfEdges) + 0.5);
+        
+        assert sizeOfVertices >= minNumberOfVertices;  
     }
-    
-    @Override
-    public boolean add(String vertex) {
-        checkRep();
+    /** Returns true if vertex label is added*/
+    @Override public boolean add(L vertex) {
         return vertices.add(vertex);
-    }
-    
-    @Override
-    public int set(String source, String target, int weight) {
-        checkRep();
-        if (!vertices.contains(source) || !vertices.contains(target)) {
-            throw new IllegalArgumentException("Source or target vertex does not exist.");
-        }
-
-        Edge newEdge = new Edge(source, target, weight);
-        int index = edges.indexOf(newEdge);
-
-        if (index == -1) {
-            edges.add(newEdge);
-            checkRep();
-            return 0; // Edge was added
-        } else {
-            Edge existingEdge = edges.get(index);
-            int oldWeight = existingEdge.getWeight();
-            existingEdge.setWeight(weight);
-            checkRep();
-            return oldWeight; // Edge already existed, return old weight
-        }
-    }
-
-    
-    @Override
-    public boolean remove(String vertex) {
-        checkRep();
-        if (!vertices.contains(vertex)) {
-            return false; // Vertex does not exist
-        }
-
-        // Remove the vertex from the set of vertices
-        vertices.remove(vertex);
-
-        // Remove edges going out from the vertex
-        edges.removeIf(edge -> edge.getSource().equals(vertex));
-
-        // Remove edges coming into the vertex
-        edges.removeIf(edge -> edge.getTarget().equals(vertex));
-
-        // Remove edges that have the vertex as either source or target
-        edges.removeIf(edge -> edge.getSource().equals(vertex) || edge.getTarget().equals(vertex));
-
-        checkRep();
-        return true;
-    }
-
-
-
-    @Override
-    public Set<String> vertices() {
-        checkRep();
-        return new HashSet<>(vertices);
-    }
-    
-    @Override
-    public Map<String, Integer> sources(String target) {
-        checkRep();
-        if (!vertices.contains(target)) {
-            throw new IllegalArgumentException("Target vertex does not exist.");
-        }
+    }    
+    @Override public int set(L source, L target, int weight) {
+        assert weight >= 0;
         
-        Map<String, Integer> sourceMap = new HashMap<>();
-        for (Edge edge : edges) {
-            if (edge.getTarget().equals(target)) {
-                sourceMap.put(edge.getSource(), edge.getWeight());
+        int indexOfEdge = indexOfEdgeInEdges(source, target);
+        int previousWeight = 0;
+        final Edge<L> previousEdge;
+        
+        if (weight > 0) {
+            Edge<L> newEdge = new Edge<>(source, target, weight);
+            if ( indexOfEdge < 0 ) {
+                add(source);
+                add(target);
+                edges.add(newEdge);
+            } else {
+                previousEdge = edges.set(indexOfEdge, newEdge);
+                previousWeight = previousEdge.getWeight();
             }
+        } else if ( weight == 0 && indexOfEdge >= 0) {
+            previousEdge = edges.remove(indexOfEdge);
+            previousWeight = previousEdge.getWeight();
         }
-        
-        return sourceMap;
-    }
-    
-    @Override
-    public Map<String, Integer> targets(String source) {
         checkRep();
-        if (!vertices.contains(source)) {
-            throw new IllegalArgumentException("Source vertex does not exist.");
-        }
-        
-        Map<String, Integer> targetMap = new HashMap<>();
-        for (Edge edge : edges) {
-            if (edge.getSource().equals(source)) {
-                targetMap.put(edge.getTarget(), edge.getWeight());
-            }
-        }
-        
-        return targetMap;
+        return previousWeight;
     }
-    
-    // TODO toString()
-    
+    //helper code
     /**
-     * Immutable.
-     * This class is internal to the rep of ConcreteEdgesGraph.
+     * Checks if an edge exists in this graph
      * 
-     * <p>PS2 instructions: the specification and implementation of this class are
-     * up to you.
+     * An edge exists in the graph if the source and target
+     * specified match with an edge's source and target in this graph
+     * The check is case-insensitive, for example
+     * "vertex" will match an edge with labels "Vertex" or "vertex".
+     *   
+     * @param source string to compare an edge's source with
+     * @param target string to compare an edge's target with
+     * @return the index i for all 0 <= i, < edges.size()
+     *             of the edge whose source and target
+     *             match source and target, 
+     *             -1 if no edge match was found
      */
-    private static class Edge {
-        
-        // TODO fields
-        private final String source;
-        private final String target;
-        private int weight;
-        
-        // Abstraction function:
-        //   Represents a directed edge in the graph with a source vertex, a target vertex, and a weight.
-        
-        // Representation invariant:
-        //   source and target are not null.
-        //   weight is non-negative.
-        
-        // Safety from rep exposure:
-        //   Fields are private and final.
-        
-        // TODO constructor
-        public Edge(String source, String target, int weight) {
-            this.source = source;
-            this.target = target;
-            this.weight = weight;
-        }
-        
-        // TODO checkRep
-        private void checkRep() {
-            assert source != null : "Source vertex cannot be null.";
-            assert target != null : "Target vertex cannot be null.";
-            assert weight >= 0 : "Weight of the edge cannot be negative.";
-        }
-        
-        // TODO methods
-        public String getSource() {
-            return source;
-        }
-        
-        public String getTarget() {
-            return target;
-        }
-        
-        public int getWeight() {
-            return weight;
-        }
-        
-        public void setWeight(int weight) {
-            this.weight = weight;
-        }
-        
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj) {
-                return true;
+    private int indexOfEdgeInEdges(L source, L target){        
+        for(int i = 0;  i < edges.size(); i++){
+            Edge<L> edge = edges.get(i);
+            if (edge.getSource().equals(source) &&
+                    edge.getTarget().equals(target)){
+                return i;
             }
-            if (obj == null || getClass() != obj.getClass()) {
-                return false;
-            }
-            Edge edge = (Edge) obj;
-            return source.equals(edge.source) && target.equals(edge.target);
         }
+        return -1;
+    }
+    
+    
+    @Override public boolean remove(L vertex) {
+        final int initialSizeEdges = edges.size();
+        final int initialSizeVertices = vertices.size();
         
-        @Override
-        public int hashCode() {
-            return Objects.hash(source, target);
+        Predicate<Edge<L>> vertexInEdge = (Edge<L> edge) -> 
+              ( ( edge.getSource().equals(vertex) ) ||
+                ( edge.getTarget().equals(vertex) ) ) ;
+        Predicate<L> vertexInVertices = v -> v.equals(vertex);
+        
+        boolean removedEdge = edges.removeIf(vertexInEdge);
+        boolean removedVertice = vertices.removeIf(vertexInVertices);
+        
+        //NB a vertex can exist without being in an edge
+        //if removedEdge, then removedVertice
+        if(removedVertice){
+            assert initialSizeVertices != vertices.size();
+            assert initialSizeVertices - 1 == vertices.size();
         }
+        if(removedEdge){
+            assert initialSizeEdges != edges.size();
+            assert removedVertice;
+        }
+        checkRep();
+        return initialSizeVertices - 1 == vertices.size();
+    }
+    /** Returns an read-only view of this ConcreteEdgesGraph's vertices */
+    @Override public Set<String> vertices() {
+        return (Set<String>) Collections.unmodifiableSet(vertices);
+    }
+
+    /** Returns a map of a target's sources */
+    @Override public Map<L, Integer> sources(L target) {
+        return edges.stream()
+                .filter(edge -> edge.getTarget().equals(target))
+                .collect(Collectors.toMap(Edge::getSource, Edge::getWeight));
+    }
+    /** Returns a map of a source's targets */
+    @Override public Map<L, Integer> targets(L source) {
+        return edges.stream()
+                .filter(edge -> edge.getSource().equals(source))
+                .collect(Collectors.toMap(Edge::getTarget, Edge::getWeight));
+    }
+
+    /**
+     * Returns the string representation for a concreteEdgesGraph
+     * 
+     * ConcreteEdgesGraph represents all edges in a graph.
+     * An edge is made up of a pair of vertices with a weight.
+     * The string returned looks like: 
+     *      edge1.getSource() -> edge1.getTarget(): edge1.getWeight
+     *      edge2.getSource() -> edge2.getTarget(): edge2.getWeight
+     * for all edges in this graph
+     *  
+     * @return string rep of this graph containing all the edges
+     *         making up the graph, "Empty Graph" if graph has no edges
+     */
+    @Override public String toString(){
+        if ( edges.isEmpty() ) {
+            return "Empty Graph";
+        }
+        return edges.stream()
+                .map(edge -> edge.toString())
+                .collect(Collectors.joining("\n"));
+    }
+}
+
+/**
+ * Immutable type that represents an edge in a graph.
+ * 
+ * This class is internal to the rep of ConcreteEdgesGraph.
+ * 
+ * <p>PS2 instructions: the specificatverticesion and implementation of this class is
+ * up to you.
+ */
+class Edge<L>{
+    private final L source;
+    private final L target;
+    private final int weight;
+    // Abstraction function:
+    //   represents an edge connecting from source to target with weight
+    // Representation invariant:
+    //   source is a non-null L
+    //   target is a non-null L
+    //   L must be immutable
+    //   weight > 0
+    // Safety from rep exposure:
+    //   All fields are private and final
+    //   source and target are of type L, required to be immutable
+    //   int is a primitive type so guaranteed immutable
+    //   setWeight() creates a new Edge object
+    
+    public Edge(final L source, final L target, final int weight){
+        assert weight > 0;
         
-        // TODO toString()
+        this.source = source;
+        this.target = target;
+        this.weight = weight;
+        checkRep();
+    }
+    private void checkRep(){
+        assert source != null;
+        assert target != null;
+        assert weight > 0;
+    }
+    //observers
+    /** Returns this Edge's source*/   
+    public L getSource(){
+        return source;
+    }
+    /**Returns this Edge's target*/
+    public L getTarget(){
+        return target;
+    }
+    /**Returns this Edge's weight*/
+    public int getWeight(){
+        return weight;
+    }
+    
+    //producers
+    /**
+     * Changes the weight of this Edge
+     * 
+     * @param newWeight an int, requires newWeight > 0
+     * @return a new Edge with newWeight 
+     */
+    public Edge<L> setWeight(int newWeight){
+        checkRep();
+        return new Edge<>(source, target, newWeight);
+    }
+    /** Returns th string representation of a weighted edge
+     * 
+     * An edge is made up of two vertices, so the rep
+     * should contain the source vertex and the target vertex
+     * that make the edge, including its weight
+     * 
+     * @return String containing source, target and weight of this edge
+     *         with the following structure:
+     *              getSource() -> getTarget(): getWeight()
+     */    
+    @Override public String toString(){
+        return getSource().toString() + 
+                " -> " + 
+                getTarget().toString() + 
+                ": " + 
+                getWeight();
+    }
+    /** Checks if two Edge objects are equal
+     * @param that object to compare
+     * @return true if this.source = that.source and
+     *                 this.target = that.target and
+     *                 this.weight = that.weight
+     *         comparison is case-insensitive
+     */
+    @Override public boolean equals(Object that){
+        if (! (that instanceof Edge)) {
+            return false;
+        }
+        Edge<?> thatEdge = (Edge<?>)that;
+        return this.getSource().equals(thatEdge.getSource()) &&
+               this.getTarget().equals(thatEdge.getTarget()) &&
+               this.getWeight() == thatEdge.getWeight();
+    }
+    @Override public int hashCode(){
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + getSource().hashCode();
+        result = prime * result + getTarget().hashCode();
+        result = prime * result + (int) getWeight();
+        return result;
     }
 }

@@ -26,7 +26,7 @@ public interface Graph<L> {
      * @return a new empty weighted directed graph
      */
     public static <L> Graph<L> empty() {
-        throw new RuntimeException("not implemented");
+       return new ConcreteEdgesGraph<>();
     }
     
     /**
@@ -69,7 +69,7 @@ public interface Graph<L> {
      * 
      * @return the set of labels of vertices in this graph
      */
-    public Set<String> vertices();
+    public Set<L> vertices();
     
     /**
      * Get the source vertices with directed edges to a target vertex and the

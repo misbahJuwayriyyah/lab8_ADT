@@ -4,12 +4,12 @@
 package poet;
 
 import static org.junit.Assert.*;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
-import org.junit.Test;
 
 /**
  * Tests for GraphPoet.
