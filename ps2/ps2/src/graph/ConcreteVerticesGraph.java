@@ -80,7 +80,7 @@ public class ConcreteVerticesGraph implements Graph<String> {
 
         vertices.remove(vertexToRemove);
 
-        // Remove incoming and outgoing edges
+        // Remove incoming and outgoing edges related to the vertex being removed
         for (Vertex v : vertices) {
             v.removeOutgoingEdge(vertex);
             v.removeIncomingEdge(vertex);
@@ -89,6 +89,7 @@ public class ConcreteVerticesGraph implements Graph<String> {
         checkRep();
         return true;
     }
+
     
     @Override
     public Set<String> vertices() {

@@ -47,10 +47,10 @@ public class ConcreteEdgesGraph implements Graph<String> {
         if (!vertices.contains(source) || !vertices.contains(target)) {
             throw new IllegalArgumentException("Source or target vertex does not exist.");
         }
-        
+
         Edge newEdge = new Edge(source, target, weight);
         int index = edges.indexOf(newEdge);
-        
+
         if (index == -1) {
             edges.add(newEdge);
             checkRep();
@@ -63,28 +63,33 @@ public class ConcreteEdgesGraph implements Graph<String> {
             return oldWeight; // Edge already existed, return old weight
         }
     }
+
     
     @Override
-public boolean remove(String vertex) {
-    checkRep();
-    if (!vertices.contains(vertex)) {
-        return false; // Vertex does not exist
+    public boolean remove(String vertex) {
+        checkRep();
+        if (!vertices.contains(vertex)) {
+            return false; // Vertex does not exist
+        }
+
+        // Remove the vertex from the set of vertices
+        vertices.remove(vertex);
+
+        // Remove edges going out from the vertex
+        edges.removeIf(edge -> edge.getSource().equals(vertex));
+
+        // Remove edges coming into the vertex
+        edges.removeIf(edge -> edge.getTarget().equals(vertex));
+
+        // Remove edges that have the vertex as either source or target
+        edges.removeIf(edge -> edge.getSource().equals(vertex) || edge.getTarget().equals(vertex));
+
+        checkRep();
+        return true;
     }
 
-    // Remove the vertex from the set of vertices
-    vertices.remove(vertex);
 
-    // Remove edges going out from the vertex
-    edges.removeIf(edge -> edge.getSource().equals(vertex) || edge.getTarget().equals(vertex));
 
-    // Remove edges coming into the vertex
-    edges.removeIf(edge -> edge.getSource().equals(vertex) || edge.getTarget().equals(vertex));
-
-    checkRep();
-    return true;
-}
-
-    
     @Override
     public Set<String> vertices() {
         checkRep();

@@ -69,7 +69,7 @@ public interface Graph<L> {
      * 
      * @return the set of labels of vertices in this graph
      */
-    public Set<L> vertices();
+    public Set<String> vertices();
     
     /**
      * Get the source vertices with directed edges to a target vertex and the

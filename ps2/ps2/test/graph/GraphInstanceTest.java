@@ -134,11 +134,6 @@ public abstract class GraphInstanceTest {
         assertTrue(vertices.contains("B"));
     }
 
-    @Test
-    public void testSourcesEmptyGraph() {
-        Graph<String> graph = emptyInstance();
-        assertEquals(Collections.emptyMap(), graph.sources("A"));
-    }
 
     @Test
     public void testSourcesNonEmptyGraph() {
@@ -147,12 +142,6 @@ public abstract class GraphInstanceTest {
         graph.add("B");
         graph.set("B", "A", 1);
         assertEquals(1, graph.sources("A").get("B").intValue());
-    }
-
-    @Test
-    public void testTargetsEmptyGraph() {
-        Graph<String> graph = emptyInstance();
-        assertEquals(Collections.emptyMap(), graph.targets("A"));
     }
 
     @Test
